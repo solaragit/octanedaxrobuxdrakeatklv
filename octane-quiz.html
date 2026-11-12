@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Octane Quiz - how well do you know Octane?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --asphalt:#33353a;
+  --paint:#f3f5f2;
+  --concrete:#dfe4e1;
+  --sign:#0b6e4f;
+  --sign-dark:#07533b;
+  --line:#ffc82e;
+  --brake:#d63a2f;
+  --mute:#5d625f;
+  --font:'Overpass','Highway Gothic','Arial Narrow',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--concrete);color:var(--asphalt);font-family:var(--font);font-size:18px;line-height:1.45;min-height:100vh;display:flex;flex-direction:column}
+button{font-family:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--asphalt);outline-offset:3px}
+
+/* the road: the dashed centre line is the progress bar */
+.road{background:var(--asphalt);height:64px;position:relative;flex:none}
+.road .name{position:absolute;left:clamp(16px,4vw,48px);top:50%;transform:translateY(-50%);color:var(--paint);font-weight:800;font-size:1.05rem;letter-spacing:.01em;background:var(--asphalt);padding-right:14px;z-index:2}
+.road .name b{color:var(--line);font-weight:800}
+.road .dash{position:absolute;left:0;right:0;top:50%;height:6px;margin-top:-3px;
+  background:repeating-linear-gradient(90deg,var(--line) 0 26px,transparent 26px 52px);opacity:.45}
+.road .done{position:absolute;left:0;top:50%;height:6px;margin-top:-3px;width:0;background:var(--line);transition:width .35s ease}
+.road .car{position:absolute;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:var(--line);border:4px solid var(--asphalt);box-shadow:0 0 0 3px var(--line);left:0;transition:left .35s ease;display:none}
+.road.live .car{display:block}
+.road .best{position:absolute;right:clamp(16px,4vw,48px);top:50%;transform:translateY(-50%);background:var(--asphalt);padding-left:14px;color:#c9cdca;font-size:.95rem;z-index:2}
+
+main{flex:1;width:100%;max-width:980px;margin:0 auto;padding:clamp(24px,5vw,56px) clamp(16px,4vw,48px) 40px}
+footer{padding:18px clamp(16px,4vw,48px) 26px;color:var(--mute);font-size:.88rem;max-width:980px;width:100%;margin:0 auto}
+
+/* highway sign panel */
+.sign{background:var(--sign);color:#fff;border-radius:16px;padding:clamp(22px,4vw,40px);position:relative;box-shadow:0 6px 0 var(--sign-dark)}
+.sign::before{content:"";position:absolute;inset:8px;border:3px solid rgba(255,255,255,.92);border-radius:10px;pointer-events:none}
+.sign>*{position:relative}
+
+/* start */
+.start{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:clamp(24px,5vw,56px);align-items:center}
+.start h1{font-size:clamp(3.2rem,9vw,6.4rem);line-height:.88;margin:0;font-weight:900;letter-spacing:-.02em}
+.start .lede{margin:clamp(22px,3vw,34px) 0 0;max-width:34ch;font-size:1.2rem}
+.start .actions{margin-top:28px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.start .gaugebox svg{width:100%;height:auto;display:block}
+.hint{margin:0;color:var(--mute);font-size:.98rem}
+@media(max-width:760px){.start{grid-template-columns:1fr}.start .gaugebox{max-width:340px}}
+
+.btn{display:inline-block;background:var(--line);color:var(--asphalt);font-weight:800;font-size:1.3rem;border:0;border-radius:999px;padding:.7rem 1.9rem;cursor:pointer;box-shadow:0 5px 0 #b88c0a;transition:transform .08s,box-shadow .08s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 6px 0 #b88c0a}
+.btn:active{transform:translateY(5px);box-shadow:0 0 0 #b88c0a}
+.btn.ghost{background:transparent;box-shadow:none;border:3px solid var(--asphalt);padding:.55rem 1.6rem}
+.btn.ghost:hover{background:var(--asphalt);color:var(--paint);transform:none;box-shadow:none}
+
+/* quiz */
+.meta{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:0 0 14px;font-weight:600;color:var(--mute)}
+.meta .tally b{color:var(--asphalt)}
+.sign.q h2{margin:0;font-size:clamp(1.7rem,4.4vw,2.7rem);line-height:1.08;font-weight:800;letter-spacing:-.01em;max-width:24ch;padding:6px 6px 8px}
+.sign.q h2:focus{outline:none}
+.opts{margin:22px 0 0;padding:0;list-style:none}
+.opt{display:grid;grid-template-columns:2.6rem 1fr auto;gap:14px;align-items:center;width:100%;text-align:left;background:var(--paint);border:3px solid var(--asphalt);border-radius:8px;padding:.7rem 1rem .7rem .7rem;margin:0 0 10px;font-size:1.15rem;font-weight:600;cursor:pointer;transition:background .1s,transform .1s}
+.opt .k{width:2.6rem;height:2.6rem;border-radius:6px;background:var(--asphalt);color:var(--paint);display:grid;place-items:center;font-weight:900;font-size:1.15rem}
+.opt:hover:not(:disabled){background:var(--line)}
+.opt:active:not(:disabled){transform:scale(.99)}
+.opt:disabled{cursor:default}
+.opt .tag{font-size:.9rem;font-weight:800}
+.opt.right{background:var(--sign);border-color:var(--sign);color:#fff}
+.opt.right .k{background:#fff;color:var(--sign)}
+.opt.wrong{background:var(--brake);border-color:var(--brake);color:#fff}
+.opt.wrong .k{background:#fff;color:var(--brake)}
+.opt.wrong .txt{text-decoration:line-through;text-decoration-thickness:2px}
+.opt.dim{opacity:.5}
+.fb{margin:18px 0 0;padding:14px 18px;background:var(--paint);border-left:10px solid var(--asphalt);border-radius:4px 10px 10px 4px}
+.fb.ok{border-left-color:var(--sign)}
+.fb.no{border-left-color:var(--brake)}
+.fb strong{display:block;font-size:1.2rem}
+.fb p{margin:2px 0 0}
+.next{margin-top:20px}
+
+/* results */
+.res{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:clamp(20px,4vw,48px);align-items:center}
+.res h1{margin:0;font-size:clamp(2.6rem,7vw,4.6rem);line-height:.92;font-weight:900;letter-spacing:-.02em}
+.res .rank{margin:14px 0 0;font-size:1.5rem;font-weight:800}
+.res .split{margin:14px 0 0;font-size:1.2rem}
+.res .split b{font-weight:900}
+.res .actions{margin-top:26px;display:flex;gap:16px;flex-wrap:wrap}
+.res .gaugebox svg{width:100%;height:auto;display:block}
+@media(max-width:760px){.res{grid-template-columns:1fr}}
+.review{margin-top:34px}
+.review h2{font-size:1.6rem;margin:0 0 12px;font-weight:800}
+.miss{background:var(--paint);border-radius:10px;padding:14px 18px;margin:0 0 10px;border-left:10px solid var(--brake)}
+.miss p{margin:0}
+.miss .mq{font-weight:800;font-size:1.1rem}
+.miss .you{color:var(--brake);margin-top:4px}
+.miss .you s{text-decoration-thickness:2px}
+.miss .ans{color:var(--sign);font-weight:800}
+.perfect{background:var(--paint);border-radius:10px;padding:16px 20px;border-left:10px solid var(--sign);font-weight:800}
+
+.noscript{padding:24px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="road" id="road" aria-hidden="true">
+  <div class="dash"></div><div class="done" id="done"></div><div class="car" id="car"></div>
+  <span class="name">Octane <b>Quiz</b></span>
+  <span class="best" id="best"></span>
+</div>
+
+<main id="app"><noscript><p class="noscript">This quiz needs JavaScript turned on.</p></noscript></main>
+
+<footer>Fan-made quiz. Not affiliated with Octane or Roblox. Questions are based on what has been publicly written about Octane since its September 2026 launch.</footer>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- questions ----------
+   q(question, rightAnswer, [wrong answers], explanation)
+   t(statement, true/false, explanation)  -> true/false question
+   The first two stay in this order; the rest are shuffled on every run. */
+function q(text,right,wrong,exp){return{q:text,right:right,wrong:wrong,exp:exp,tf:false}}
+function t(text,val,exp){return{q:'True or false: '+text,right:val?'True':'False',wrong:[],exp:exp,tf:true}}
+
+var Q=[
+ q('Who owns Octane?','Dax',['Caelus','Aisaka','Roblox Corporation'],'Octane is owned by Dax.'),
+ q('When was Octane made?','September 21, 2026',['March 3, 2024','December 25, 2021','July 4, 2023'],'Octane launched on September 21, 2026, as a rebrand of an earlier revival called Aisaka.'),
+
+ q('What is Octane?','A third-party Roblox revival',['An official Roblox game mode','A Roblox Corp. antivirus tool','A Discord music bot'],'Octane is a third-party revival of old Roblox. It has nothing to do with Roblox Corporation.'),
+ q('What is the address of the Octane website?','octane.wtf',['octane.rbx','octane.lol','octane.fun'],'Octane lives at octane.wtf.'),
+ q('Which Roblox era does Octane recreate?','2021 to 2022',['2008 to 2010','2012 to 2014','2016 to 2017'],'Octane recreates the 2021 and 2022 Roblox clients.'),
+ q('Most revivals target which era, unlike Octane?','Pre-2016 "classic" Roblox',['2021 onward','2024 only','Whatever is newest'],'Most revivals go for pre-2016 classic Roblox. Octane goes for 2021 and 2022 instead.'),
+ q('Octane is a rebrand of which earlier revival?','Aisaka',['Nitro','Velocity','Turbo'],'Octane is the rebrand of Aisaka.'),
+ q('What was the project\'s very first name?','Caelus',['Aisaka','Octane','Kairos'],'The project started as Caelus, was renamed Aisaka, and finally became Octane.'),
+ q('In what order did the names come?','Caelus, then Aisaka, then Octane',['Octane, then Aisaka, then Caelus','Aisaka, then Caelus, then Octane','Caelus, then Octane, then Aisaka'],'Caelus came first, then Aisaka, then Octane.'),
+ q('Which of these was never a name of this revival?','Velocity',['Caelus','Aisaka','Octane'],'It went Caelus, Aisaka, Octane. Velocity was never one of them.'),
+ t('Aisaka used to be called Caelus.',true,'Yes. Caelus was renamed Aisaka before Aisaka became Octane.'),
+ q('What triggered the move from Aisaka to Octane?','A DMCA takedown',['The owner got bored','A server move','A Discord ban'],'Octane came after a DMCA takedown of Aisaka, plus controversies among its staff.'),
+ q('Who issued the DMCA strike against Aisaka?','Roblox',['Discord','Google','Microsoft'],'Roblox issued the DMCA strike against Aisaka.'),
+ t('The DMCA strike was against Octane itself.',false,'It was against Aisaka. Octane is the name the project took afterward.'),
+ q('What does DMCA stand for?','Digital Millennium Copyright Act',['Direct Media Content Agreement','Digital Machine Code Authority','Download and Media Copy Allowance'],'DMCA is the Digital Millennium Copyright Act, the US law behind takedown notices.'),
+ q('Around when did the project first start, back when it was Caelus?','September 2025',['Early 2019','Late 2021','Mid 2023'],'The project began around September 2025.'),
+ q('Roughly how long was it from the project\'s start to the Octane launch?','About a year',['About a week','About three months','About five years'],'Around September 2025 to September 21, 2026 is about a year.'),
+ q('In which month did Octane launch?','September',['March','June','December'],'Octane launched in September 2026.'),
+ t('Octane launched in 2025.',false,'It launched on September 21, 2026. The project behind it started around September 2025.'),
+
+ q('About how many UGC catalog items does Octane have?','Over 400',['About 10','Around 50','Over 10,000'],'Octane has over 400 user-generated content items.'),
+ q('What does UGC stand for?','User-Generated Content',['Universal Game Currency','Unlimited Gear Catalog','User Group Chat'],'UGC means User-Generated Content: items made by community creators.'),
+ q('The Octane catalog mixes UGC with what?','Official Roblox items',['Only free models','Items from other revivals','Nothing else'],'The catalog blends official Roblox items with the 400+ UGC items.'),
+ t('Octane\'s catalog includes UGC items.',true,'It does, over 400 of them.'),
+ q('Which old currency does Octane bring back?','Tix',['Coins','Gems','Studs'],'Octane reintroduces Tix, short for Tickets.'),
+ q('Tix is short for what?','Tickets',['Tokens','Tiles','Tickers'],'Tix stands for Tickets.'),
+ q('How many Tix does Octane give per minute?','10',['1','5','100'],'Users get 10 Tix per minute.'),
+ q('At 10 Tix per minute, how many Tix do you get in 10 minutes?','100',['10','60','1,000'],'10 Tix a minute for 10 minutes is 100 Tix.'),
+ q('At 10 Tix per minute, how many Tix do you get in an hour?','600',['60','100','1,200'],'10 a minute times 60 minutes is 600 Tix.'),
+ t('Octane gives out 10 Tix per hour.',false,'It is 10 Tix per minute, not per hour.'),
+ t('Octane has Robux as well as Tix.',true,'Tix are given alongside Robux.'),
+
+ q('What do you link and verify to sign up for Octane?','A Discord account',['A phone number','A Roblox cookie','A credit card'],'Sign-up works by linking and verifying a Discord account.'),
+ t('Octane requires an invite key to register.',false,'No. Many private revivals need invite keys, but Octane has open sign-ups.'),
+ q('What is special about Octane\'s registration compared with many private revivals?','It is open, no invite key needed',['It costs money','It is staff-only','It only opens on Fridays'],'Open registration with Discord verification, instead of invite keys.'),
+ q('What did open registration help Octane do?','Reach tens of thousands of accounts quickly',['Avoid the DMCA','Hide its staff','Remove Tix'],'Easy sign-ups helped Octane grow to tens of thousands of registered accounts shortly after launch.'),
+ q('Roughly how many accounts had registered shortly after launch?','Tens of thousands',['About 12','A few hundred','Over 100 million'],'Tens of thousands of accounts signed up shortly after launch.'),
+ t('Octane is run by Roblox Corporation.',false,'Octane is a third-party revival.'),
+ t('Octane focuses on pre-2016 classic Roblox.',false,'It focuses on the 2021 and 2022 clients.'),
+ t('Octane launched in 2026.',true,'It launched September 21, 2026.'),
+
+ q('What does ORC stand for in the revival scene?','Old Roblox Community',['Official Roblox Council','Octane Revival Club','Open Roblox Client'],'ORC is the Old Roblox Community, where Octane has faced heavy criticism.'),
+ q('Which subreddit had a thread asking if Octane is safe?','r/oldrobloxrevivals',['r/roblox','r/robloxgamedev','r/gaming'],'The thread is on r/oldrobloxrevivals.'),
+ q('What was the topic of that Reddit thread?','"Is Octane safe?"',['"Is Octane dead?"','"Is Octane free?"','"Is Octane legal?"'],'People were asking whether Octane is safe.'),
+ q('What did critics allege about Octane\'s code?','That it relies on pasted or AI-generated code',['That it is written in assembly','That it is perfectly audited','That it has no code at all'],'Critics alleged pasted or AI-generated code. These are allegations, not proven facts.'),
+ q('What security worry comes with third-party revivals like Octane?','Downloading custom launchers',['Getting too many Tix','Servers being too fast','Having too many friends'],'People worry about the security risks of downloading third-party custom launchers.'),
+ q('Besides code, what did the ORC criticize about Octane\'s team?','Past leadership controversies',['Their typing speed','Their choice of fonts','Their pizza orders'],'Past leadership controversies were a common complaint.'),
+
+ q('What was Octomons?','A gambling website tied to Octane',['Octane\'s official mobile app','Octane\'s Tix shop','A Pokemon-style game on Octane'],'Octomons was a gambling site for Octane.'),
+ q('What happened to many Octane users because of Octomons?','They lost their limiteds',['They got free Robux','They were verified','They won extra Tix'],'Octomons made everyone lose their limiteds.'),
+ q('Octomons was which kind of website?','Gambling',['Trading cards','News','Streaming'],'Octomons was a gambling website.'),
+ q('Which platform was Octomons built around?','Octane',['Aisaka only','Roblox Corporation','Discord'],'Octomons was a gambling site made for Octane.'),
+ q('What is a "limited" in Roblox?','A limited-quantity item that can be traded',['A free item anyone can get','A staff-only badge','A game with a player cap'],'Limiteds are limited-supply items players can trade.'),
+
+ q('In what year did official Roblox remove Tix?','2016',['2010','2013','2019'],'Roblox removed Tix in 2016. Octane brought them back.'),
+ q('In what year did Roblox first open to the public?','2006',['2010','2012','2016'],'Roblox was released publicly in 2006.'),
+ q('In what year did Roblox go public on the stock market?','2021',['2016','2018','2023'],'Roblox listed in 2021, the same period Octane recreates.'),
+ q('What scripting language does Roblox use?','Luau',['Python','Java','Rust'],'Roblox uses Luau, a fast variant of Lua.'),
+ q('Which file extension is a Roblox place file?','.rbxl',['.rblx','.roblox','.rbxp'],'.rbxl is a place file. .rbxm is a model file.'),
+ q('Where is Roblox Corporation headquartered?','San Mateo, California',['Austin, Texas','Seattle, Washington','Toronto, Canada'],'Roblox is headquartered in San Mateo, California.'),
+ q('Which paid currency is standard on official Roblox today?','Robux',['Tix','Coins','Gems'],'Robux is the paid currency. Tix are gone from the official site.'),
+ q('What is a "revival" in the Roblox community?','A fan-made recreation of an older Roblox',['An official Roblox sale','A new Roblox Studio','A type of limited'],'Revivals are fan projects that bring back older versions of Roblox.'),
+ q('What kind of domain extension is .wtf?','A generic top-level domain',['A country code for Wales','A Roblox-owned extension','A Discord-only extension'],'.wtf is a generic top-level domain, so anyone can register one.'),
+ q('What does a fuel\'s octane rating measure?','Resistance to engine knock',['How much it costs','Its color','How green it is'],'Higher octane fuel resists knocking in an engine. It is nothing to do with the revival, but it is where the name comes from.')
+];
+
+/* ---------- helpers ---------- */
+var $=function(s){return document.querySelector(s)};
+var app=$('#app'),road=$('#road'),done=$('#done'),car=$('#car'),bestEl=$('#best');
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var x=a[i];a[i]=a[j];a[j]=x}return a}
+var KEY='octane_quiz_best';
+function getBest(){try{var v=JSON.parse(localStorage.getItem(KEY));if(v&&typeof v.r==='number')return v}catch(e){}return null}
+function setBest(r,n){var b=getBest();if(!b||r>b.r){try{localStorage.setItem(KEY,JSON.stringify({r:r,n:n}))}catch(e){}}}
+function showBest(){var b=getBest();bestEl.textContent=b?'Best: '+b.r+' of '+b.n:''}
+function build(){
+  var rest=shuffle(Q.slice(2));
+  return Q.slice(0,2).concat(rest).map(function(x){
+    var opts=x.tf?['True','False']:shuffle([x.right].concat(x.wrong));
+    return{q:x.q,opts:opts,a:opts.indexOf(x.right),exp:x.exp};
+  });
+}
+function progress(i,n){var p=n?i/n*100:0;done.style.width=p+'%';car.style.left=p+'%'}
+
+/* ---------- fuel gauge ---------- */
+function gauge(){
+  var cx=150,cy=150,r=120,ticks='',i;
+  for(i=0;i<=10;i++){
+    var a=Math.PI*(1-i/10),major=i%5===0,r1=major?100:108;
+    ticks+='<line x1="'+(cx+Math.cos(a)*r1).toFixed(1)+'" y1="'+(cy-Math.sin(a)*r1).toFixed(1)+'" x2="'+(cx+Math.cos(a)*(r+10)).toFixed(1)+'" y2="'+(cy-Math.sin(a)*(r+10)).toFixed(1)+'" stroke="#33353a" stroke-width="'+(major?5:3)+'" stroke-linecap="round"/>';
+  }
+  var arc='M30 150A120 120 0 0 1 270 150';
+  return '<svg viewBox="0 0 300 190" role="img" aria-label="Fuel gauge">'
+   +'<path d="'+arc+'" fill="none" stroke="#f3f5f2" stroke-width="16" stroke-linecap="butt"/>'
+   +'<path id="gfill" d="'+arc+'" fill="none" stroke="#ffc82e" stroke-width="16" stroke-dasharray="377" stroke-dashoffset="377" style="transition:stroke-dashoffset 1.5s cubic-bezier(.2,.8,.2,1)"/>'
+   +'<path d="'+arc+'" fill="none" stroke="#d63a2f" stroke-width="16" stroke-dasharray="45 400"/>'
+   +ticks
+   +'<text x="30" y="182" text-anchor="middle" font-family="Overpass,sans-serif" font-weight="900" font-size="26" fill="#33353a">E</text>'
+   +'<text x="270" y="182" text-anchor="middle" font-family="Overpass,sans-serif" font-weight="900" font-size="26" fill="#33353a">F</text>'
+   +'<g id="needle" style="transform-origin:150px 150px;transform:rotate(-90deg);transition:transform 1.5s cubic-bezier(.2,.8,.2,1)">'
+   +'<path d="M146 150L150 48L154 150Z" fill="#33353a"/></g>'
+   +'<circle cx="150" cy="150" r="13" fill="#33353a"/><circle cx="150" cy="150" r="5" fill="#ffc82e"/></svg>';
+}
+function sweep(p){
+  requestAnimationFrame(function(){requestAnimationFrame(function(){
+    var n=$('#needle'),f=$('#gfill');if(!n||!f)return;
+    n.style.transform='rotate('+(-90+180*p)+'deg)';
+    f.style.strokeDashoffset=String(377*(1-p));
+  })});
+}
+
+/* ---------- screens ---------- */
+var run=null;
+
+function start(){
+  run=null;road.classList.remove('live');progress(0,1);showBest();
+  var b=getBest();
+  app.innerHTML=
+   '<div class="start">'
+  +'<div><div class="sign"><h1>Octane<br>Quiz</h1></div>'
+  +'<p class="lede">How well do you know Octane? '+Q.length+' questions on the owner, the launch, the rebrand, Tix, Octomons and more.</p>'
+  +'<div class="actions"><button class="btn" id="go">Start quiz</button>'
+  +'<p class="hint">'+(b?'Your best so far is '+b.r+' of '+b.n+'.':'No timer. You see the right answer after every question.')+'</p></div></div>'
+  +'<div class="gaugebox">'+gauge()+'</div></div>';
+  $('#go').onclick=begin;$('#go').focus();
+}
+
+function begin(){
+  run={qs:build(),i:0,right:0,wrong:0,log:[],locked:false};
+  road.classList.add('live');
+  ask();
+}
+
+function ask(){
+  var n=run.qs.length,x=run.qs[run.i];run.locked=false;
+  progress(run.i,n);
+  var opts='';
+  x.opts.forEach(function(o,k){
+    opts+='<li><button class="opt" data-k="'+k+'"><span class="k">'+'ABCD'[k]+'</span><span class="txt">'+esc(o)+'</span><span class="tag"></span></button></li>';
+  });
+  app.innerHTML=
+   '<div class="meta"><span>Question '+(run.i+1)+' of '+n+'</span><span class="tally"><b>'+run.right+'</b> right, <b>'+run.wrong+'</b> wrong</span></div>'
+  +'<div class="sign q"><h2 id="qh" tabindex="-1">'+esc(x.q)+'</h2></div>'
+  +'<ul class="opts" id="opts">'+opts+'</ul><div id="fbwrap" aria-live="polite"></div>';
+  $('#opts').onclick=function(e){var b=e.target.closest('.opt');if(b&&!run.locked)pick(+b.getAttribute('data-k'))};
+  $('#qh').focus({preventScroll:true});
+  window.scrollTo(0,0);
+}
+
+function pick(k){
+  var x=run.qs[run.i],ok=k===x.a;run.locked=true;
+  if(ok)run.right++;else run.wrong++;
+  run.log.push({q:x.q,you:x.opts[k],ans:x.opts[x.a],ok:ok});
+  var bs=document.querySelectorAll('.opt');
+  bs.forEach(function(b,i){
+    b.disabled=true;
+    if(i===x.a){b.classList.add('right');b.querySelector('.tag').textContent='Correct'}
+    else if(i===k){b.classList.add('wrong');b.querySelector('.tag').textContent='Your answer'}
+    else b.classList.add('dim');
+  });
+  var last=run.i===run.qs.length-1;
+  $('#fbwrap').innerHTML='<div class="fb '+(ok?'ok':'no')+'"><strong>'+(ok?'Correct.':'Wrong. The answer is '+esc(x.opts[x.a])+'.')+'</strong><p>'+esc(x.exp)+'</p></div>'
+    +'<button class="btn next" id="nx">'+(last?'See my score':'Next question')+'</button>';
+  document.querySelector('.meta .tally').innerHTML='<b>'+run.right+'</b> right, <b>'+run.wrong+'</b> wrong';
+  var nx=$('#nx');nx.onclick=function(){run.i++;if(run.i>=run.qs.length)finish();else ask()};
+  nx.focus({preventScroll:true});
+  nx.scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+
+function rank(p){
+  if(p===1)return 'Perfect. You basically run it.';
+  if(p>=.9)return 'Octane insider';
+  if(p>=.75)return 'Longtime regular';
+  if(p>=.55)return 'Verified member';
+  if(p>=.3)return 'Lurking in the Discord';
+  return 'Never heard of it';
+}
+
+function finish(){
+  var n=run.qs.length,r=run.right,w=run.wrong,p=r/n;
+  progress(n,n);road.classList.remove('live');setBest(r,n);showBest();
+  var miss=run.log.filter(function(l){return!l.ok}),mh='';
+  if(miss.length){
+    mh='<div class="review"><h2>What you missed</h2>';
+    miss.forEach(function(m){mh+='<div class="miss"><p class="mq">'+esc(m.q)+'</p><p class="you">You said: <s>'+esc(m.you)+'</s></p><p class="ans">Answer: '+esc(m.ans)+'</p></div>'});
+    mh+='</div>';
+  }else mh='<div class="review"><div class="perfect">You missed nothing.</div></div>';
+  app.innerHTML=
+   '<div class="res"><div><div class="sign"><h1>'+r+' out of '+n+'</h1></div>'
+  +'<p class="rank">'+rank(p)+'</p>'
+  +'<p class="split">You got <b>'+r+' right</b> and <b>'+w+' wrong</b> ('+Math.round(p*100)+'%).</p>'
+  +'<div class="actions"><button class="btn" id="again">Retake quiz</button><button class="btn ghost" id="home">Back to start</button></div></div>'
+  +'<div class="gaugebox">'+gauge()+'</div></div>'+mh;
+  $('#again').onclick=begin;$('#home').onclick=start;
+  window.scrollTo(0,0);sweep(p);
+}
+
+document.addEventListener('keydown',function(e){
+  if(!run||run.locked||e.ctrlKey||e.metaKey||e.altKey)return;
+  var s=document.querySelectorAll('.opt');if(!s.length)return;
+  var k='abcd'.indexOf(e.key.toLowerCase());if(k<0)k='1234'.indexOf(e.key);
+  if(k>=0&&k<s.length){e.preventDefault();pick(k)}
+});
+
+start();
+})();
+</script>
+</body>
+</html>
